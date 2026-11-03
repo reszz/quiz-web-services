@@ -1,114 +1,345 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# API Reservasi Lapangan Olahraga
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+REST API untuk sistem reservasi lapangan olahraga (futsal, badminton, basket, mini soccer, tenis) menggunakan **NestJS**. Pengguna dapat melihat daftar dan jadwal lapangan, memesan slot waktu, melihat reservasi, dan membatalkan booking. Sistem menolak pemesanan pada jadwal yang bentrok.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Kuis Proyek Individu, Praktek Pemrograman Web 3 (Sesi 5).
 
-## Description
+| | |
+|---|---|
+| Nama | Salira Restu Gusti |
+| NIM / Kelas | 240414018 / 3-IF |
+| Program Studi | Teknik Informatika, IDE LPKIA Bandung |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Batasan implementasi
 
-## Project setup
+- NestJS dengan **Controller** dan **Service**.
+- Data disimpan sementara di **array** (memori). Data hilang saat server di-restart.
+- Request body berupa object biasa. **Tanpa** DTO, class-validator, dan database. Validasi dilakukan manual di Service.
+- Autentikasi dan frontend tidak termasuk cakupan.
+
+## Teknologi
+
+- Node.js 18 atau lebih baru
+- NestJS 10 (`@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`)
+- TypeScript
+
+## Cara menjalankan
 
 ```bash
-$ npm install
+# 1. Install dependency
+npm install
+
+# 2. Jalankan mode development (auto-reload)
+npm run start:dev
+
+# atau build lalu jalankan
+npm run build
+node dist/main.js
 ```
 
-## Compile and run the project
+API aktif di `http://localhost:3000`. Port dapat diubah lewat environment variable `PORT`.
+
+## Struktur project
+
+```text
+src/
+  main.ts                      entry point
+  app.module.ts                registrasi controller dan service
+  common/
+    response.ts                helper format response: ok() dan fail()
+    time.util.ts               validasi tanggal/jam dan deteksi overlap
+  fields/
+    fields.controller.ts       endpoint /fields
+    fields.service.ts          data dan logika lapangan
+  bookings/
+    bookings.controller.ts     endpoint /bookings
+    bookings.service.ts        logika booking dan konflik jadwal
+  users/
+    users.controller.ts        endpoint /users/:userId/bookings
+postman/
+  reservasi-lapangan.postman_collection.json
+```
+
+## Model data
+
+**Field (lapangan)**
+
+| Properti | Tipe | Keterangan |
+|---|---|---|
+| id | number | Dibuat otomatis |
+| name | string | Nama lapangan |
+| sportType | string | Jenis olahraga (disimpan huruf kecil) |
+| pricePerHour | number | Harga per jam, harus lebih dari 0 |
+| status | string | `AVAILABLE` atau `MAINTENANCE` |
+
+Data awal: 5 lapangan (id 1 sampai 5). Lapangan id 5 berstatus `MAINTENANCE` untuk bahan uji.
+
+**Booking (reservasi)**
+
+| Properti | Tipe | Keterangan |
+|---|---|---|
+| id | number | Dibuat otomatis |
+| userId | string | Opsional di request. Jika kosong, memakai `customerName` huruf kecil |
+| fieldId | number | Id lapangan |
+| date | string | Format `YYYY-MM-DD` |
+| startTime, endTime | string | Format `HH:mm` |
+| customerName | string | Nama pemesan |
+| totalPrice | number | `pricePerHour` dikali durasi jam, dihitung saat booking |
+| status | string | `BOOKED`, `CANCELLED`, atau `COMPLETED` |
+| createdAt, updatedAt | string | Waktu ISO 8601 |
+| cancelledAt | string | Hanya ada jika dibatalkan |
+
+## Daftar endpoint
+
+### Endpoint utama (sesuai soal)
+
+| Method | Path | Fungsi | Status sukses |
+|---|---|---|---|
+| GET | `/fields` | Daftar lapangan | 200 |
+| GET | `/fields/:id` | Detail lapangan | 200 |
+| GET | `/fields/:id/availability?date=YYYY-MM-DD` | Slot terpakai dan slot kosong | 200 |
+| POST | `/bookings` | Buat reservasi | 201 |
+| GET | `/bookings/:id` | Detail reservasi | 200 |
+| GET | `/users/:userId/bookings` | Reservasi milik satu user | 200 |
+| PATCH | `/bookings/:id/cancel` | Batalkan reservasi | 200 |
+
+### Endpoint tambahan (CRUD lengkap)
+
+| Method | Path | Fungsi | Status sukses |
+|---|---|---|---|
+| POST | `/fields` | Tambah lapangan | 201 |
+| PUT | `/fields/:id` | Ganti seluruh data lapangan | 200 |
+| PATCH | `/fields/:id` | Ubah sebagian data lapangan | 200 |
+| DELETE | `/fields/:id` | Hapus lapangan | 200 |
+| GET | `/bookings` | Daftar reservasi | 200 |
+| PUT | `/bookings/:id` | Ganti seluruh data reservasi | 200 |
+| PATCH | `/bookings/:id` | Ubah sebagian (misalnya geser jam) | 200 |
+| PATCH | `/bookings/:id/complete` | Tandai reservasi selesai | 200 |
+| DELETE | `/bookings/:id` | Hapus reservasi permanen | 200 |
+
+### Query parameter
+
+| Endpoint | Parameter | Contoh |
+|---|---|---|
+| `GET /fields` | `sportType`, `status` | `/fields?sportType=futsal` |
+| `GET /fields/:id/availability` | `date` (wajib) | `/fields/2/availability?date=2026-11-05` |
+| `GET /bookings` | `fieldId`, `date`, `status` | `/bookings?status=BOOKED&date=2026-11-05` |
+| `GET /users/:userId/bookings` | `status` | `/users/budi/bookings?status=BOOKED` |
+
+## Aturan bisnis
+
+- Jam operasional **08:00 sampai 22:00**. Booking di luar jam itu ditolak.
+- `endTime` harus lebih besar dari `startTime`.
+- Dua booking **bentrok** jika berada di lapangan dan tanggal yang sama dan rentang jamnya tumpang tindih. Booking berurutan (misalnya 18:00-19:00 lalu 19:00-20:00) **tidak** bentrok.
+- Reservasi berstatus `CANCELLED` **tidak** dianggap memakai slot, sehingga slotnya bisa dipesan lagi. Status `BOOKED` dan `COMPLETED` tetap menghalangi.
+- Lapangan berstatus `MAINTENANCE` tidak bisa dipesan.
+- Reservasi hanya bisa diubah atau dibatalkan selama berstatus `BOOKED`.
+- Lapangan yang masih memiliki reservasi `BOOKED` tidak bisa dihapus.
+
+## Format response
+
+Sukses:
+
+```json
+{
+  "success": true,
+  "message": "Reservasi berhasil dibuat",
+  "data": {}
+}
+```
+
+Gagal:
+
+```json
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "Jadwal bentrok dengan reservasi lain",
+  "conflictWith": {}
+}
+```
+
+## Status code
+
+| Status | Situasi |
+|---|---|
+| 200 OK | Baca, ubah, batalkan, atau hapus berhasil |
+| 201 Created | Lapangan atau reservasi berhasil dibuat |
+| 400 Bad Request | Input tidak valid (format tanggal/jam, jam terbalik, id bukan angka, field wajib kosong) |
+| 404 Not Found | Lapangan atau reservasi tidak ditemukan |
+| 409 Conflict | Jadwal bentrok, reservasi sudah dibatalkan, status tidak sesuai, atau lapangan masih punya reservasi aktif |
+| 422 Unprocessable Entity | Lapangan sedang `MAINTENANCE` |
+
+## Contoh request dan response
+
+### Booking berhasil (201)
+
+```http
+POST /bookings
+Content-Type: application/json
+
+{
+  "fieldId": 2,
+  "date": "2026-11-05",
+  "startTime": "18:00",
+  "endTime": "19:00",
+  "customerName": "Budi"
+}
+```
+
+```json
+{
+  "success": true,
+  "message": "Reservasi berhasil dibuat",
+  "data": {
+    "id": 1,
+    "userId": "budi",
+    "fieldId": 2,
+    "date": "2026-11-05",
+    "startTime": "18:00",
+    "endTime": "19:00",
+    "customerName": "Budi",
+    "totalPrice": 60000,
+    "status": "BOOKED",
+    "createdAt": "2026-11-03T09:20:23.026Z",
+    "updatedAt": "2026-11-03T09:20:23.026Z"
+  }
+}
+```
+
+### Jadwal bentrok (409)
+
+Request yang sama dengan `startTime` `18:30` dan `endTime` `19:30` pada lapangan dan tanggal yang sama.
+
+```json
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "Jadwal bentrok dengan reservasi lain",
+  "conflictWith": {
+    "bookingId": 1,
+    "date": "2026-11-05",
+    "startTime": "18:00",
+    "endTime": "19:00"
+  }
+}
+```
+
+### Lapangan tidak ditemukan (404)
+
+`GET /fields/99`
+
+```json
+{
+  "success": false,
+  "statusCode": 404,
+  "message": "Lapangan dengan id 99 tidak ditemukan"
+}
+```
+
+### Reservasi sudah dibatalkan (409)
+
+`PATCH /bookings/1/cancel` untuk kedua kalinya.
+
+```json
+{
+  "success": false,
+  "statusCode": 409,
+  "message": "Reservasi dengan id 1 sudah dibatalkan sebelumnya"
+}
+```
+
+### Validasi gagal (400)
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "message": "Validasi gagal",
+  "errors": [
+    "date wajib berformat YYYY-MM-DD yang valid",
+    "customerName wajib diisi (string)",
+    "endTime harus lebih besar dari startTime"
+  ]
+}
+```
+
+### Cek ketersediaan (200)
+
+`GET /fields/2/availability?date=2026-11-05` setelah ada booking 18:00-19:00 dan 19:00-20:00.
+
+```json
+{
+  "success": true,
+  "message": "Ketersediaan lapangan",
+  "data": {
+    "field": { "id": 2, "name": "Badminton Court 1", "status": "AVAILABLE" },
+    "date": "2026-11-05",
+    "operatingHours": { "open": "08:00", "close": "22:00" },
+    "bookedSlots": [
+      { "bookingId": 1, "startTime": "18:00", "endTime": "19:00", "status": "BOOKED" },
+      { "bookingId": 2, "startTime": "19:00", "endTime": "20:00", "status": "BOOKED" }
+    ],
+    "availableSlots": [
+      { "startTime": "08:00", "endTime": "18:00" },
+      { "startTime": "20:00", "endTime": "22:00" }
+    ]
+  }
+}
+```
+
+## Skenario pengujian
+
+Uji secara berurutan karena data tersimpan di memori. Restart server untuk mengulang dari awal.
+
+| No | Skenario | Request | Hasil |
+|---|---|---|---|
+| 1 | Daftar lapangan | `GET /fields` | 200 |
+| 1 | Cek ketersediaan | `GET /fields/2/availability?date=2026-11-05` | 200 |
+| 2 | Booking berhasil | `POST /bookings` | 201 |
+| 3 | Jadwal bentrok | `POST /bookings` jam 18:30-19:30 | 409 |
+| 4 | Lapangan tidak ada | `GET /fields/99` | 404 |
+| 4 | Reservasi tidak ada | `PATCH /bookings/999/cancel` | 404 |
+| 5 | Batalkan booking | `PATCH /bookings/1/cancel` | 200 |
+| 5 | Slot tersedia lagi | `GET /fields/2/availability?date=2026-11-05` | 200 |
+| 5 | Booking ulang slot yang sama | `POST /bookings` jam 18:00-19:00 | 201 |
+
+### Dengan Postman
+
+1. Klik **Import**, lalu pilih `postman/reservasi-lapangan.postman_collection.json`.
+2. Variabel `baseUrl` sudah diisi `http://localhost:3000`.
+3. Jalankan request di folder **1. Skenario wajib quiz** secara berurutan, lalu folder CRUD.
+
+### Dengan curl
 
 ```bash
-# development
-$ npm run start
+# Booking berhasil
+curl -X POST http://localhost:3000/bookings \
+  -H "Content-Type: application/json" \
+  -d '{"fieldId":2,"date":"2026-11-05","startTime":"18:00","endTime":"19:00","customerName":"Budi"}'
 
-# watch mode
-$ npm run start:dev
+# Batalkan reservasi
+curl -X PATCH http://localhost:3000/bookings/1/cancel
 
-# production mode
-$ npm run start:prod
+# Cek ketersediaan
+curl "http://localhost:3000/fields/2/availability?date=2026-11-05"
 ```
 
-## Run tests
+Pengguna Windows PowerShell: gunakan `curl.exe`, dan simpan body JSON ke file lalu kirim dengan `-d "@booking.json"`.
 
-```bash
-# unit tests
-$ npm run test
+## Catatan desain
 
-# e2e tests
-$ npm run test:e2e
+- **`userId` opsional.** Contoh body pada soal tidak memuat `userId`, tetapi ada endpoint `/users/:userId/bookings`. Jika `userId` tidak dikirim, sistem memakai `customerName` huruf kecil sebagai penanda pemilik.
+- **Cancel memakai PATCH.** Pembatalan mengubah status menjadi `CANCELLED` dan tidak menghapus data, sehingga riwayat tetap tersimpan.
+- **409 untuk bentrok, 422 untuk maintenance.** Bentrok adalah tabrakan dengan data yang sudah ada. Maintenance adalah aturan bisnis yang menolak input yang sebenarnya valid.
+- **Satu module.** `FieldsController` memerlukan `BookingsService` dan sebaliknya `BookingsService` memerlukan `FieldsService`. Memisahnya menjadi dua module menimbulkan dependensi melingkar, jadi semuanya didaftarkan di `AppModule`.
+- **Body JSON yang rusak** (misalnya tanda kutip kurang) masih memakai format error bawaan NestJS, bukan format response di atas.
 
-# test coverage
-$ npm run test:cov
-```
+## Pengembangan lanjutan
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- DTO dan class-validator dengan `ValidationPipe` global.
+- Database (PostgreSQL dengan Prisma atau TypeORM), dengan konflik jadwal dijaga oleh transaksi atau constraint.
+- Autentikasi JWT agar `userId` berasal dari token.
+- Dokumentasi otomatis dengan Swagger.
+- Penolakan booking untuk waktu yang sudah lewat dan penanganan zona waktu.
+- Unit test (Jest) untuk fungsi `isOverlap` dan pengecekan konflik.
