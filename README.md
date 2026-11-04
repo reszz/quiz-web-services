@@ -102,6 +102,7 @@ Data awal: 5 lapangan (id 1 sampai 5). Lapangan id 5 berstatus `MAINTENANCE` unt
 | GET | `/bookings/:id` | Detail reservasi | 200 |
 | GET | `/users/:userId/bookings` | Reservasi milik satu user | 200 |
 | PATCH | `/bookings/:id/cancel` | Batalkan reservasi | 200 |
+| GET | `/users` | Daftar Users | 200 | 
 
 ### Endpoint tambahan (CRUD lengkap)
 
