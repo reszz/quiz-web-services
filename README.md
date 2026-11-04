@@ -91,7 +91,7 @@ Data awal: 5 lapangan (id 1 sampai 5). Lapangan id 5 berstatus `MAINTENANCE` unt
 
 ## Daftar endpoint
 
-### Endpoint utama (sesuai soal)
+### Endpoint utama 
 
 | Method | Path | Fungsi | Status sukses |
 |---|---|---|---|
@@ -99,6 +99,7 @@ Data awal: 5 lapangan (id 1 sampai 5). Lapangan id 5 berstatus `MAINTENANCE` unt
 | GET | `/fields/:id` | Detail lapangan | 200 |
 | GET | `/fields/:id/availability?date=YYYY-MM-DD` | Slot terpakai dan slot kosong | 200 |
 | POST | `/bookings` | Buat reservasi | 201 |
+| GET | `/bookings` | Daftar reservasi | 200 |
 | GET | `/bookings/:id` | Detail reservasi | 200 |
 | GET | `/users/:userId/bookings` | Reservasi milik satu user | 200 |
 | PATCH | `/bookings/:id/cancel` | Batalkan reservasi | 200 |
